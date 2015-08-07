@@ -29,7 +29,7 @@ Then, go ahead and download the element's dependencies:
     bower install
 
 
-## Playing With Your Element
+## Playing with the element
 
 If you wish to work on your element in isolation, we recommend that you use
 [Polyserve](https://github.com/PolymerLabs/polyserve) to keep your element's
