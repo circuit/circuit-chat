@@ -13,6 +13,10 @@
 </circuit-chat>
 ```
 
+## Prerequisites
+
+To use any Circuit Polymer elements you need to get free developer account. Get yours today at the [developer portal](https://developers.circuit.com).
+
 ## Dependencies
 
 Element dependencies are managed via [Bower](http://bower.io/). You can
