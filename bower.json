@@ -4,7 +4,7 @@
   "authors": [
     "Roger Urscheler <roger.urscheler@unify.com>"
   ],
-  "description": "Polymer element for a complete, but simple chat module using the Circuit SDK.",
+  "description": "Polymer element for a simple chat module that uses Circuit PaaS.",
   "keywords": [
     "Circuit",
     "SDK",
