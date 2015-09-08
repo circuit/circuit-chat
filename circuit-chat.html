@@ -143,7 +143,7 @@ Example:
           if (item.type === 'TEXT') {
             item.chatText = item.text.content.replace(/<(br[\/]?|\/li|hr[\/]?)>/gi, ' ');
 
-            self.$.api.getUsersByIds([item.creatorId]).then(function (users) {
+            self.$.api.getUsersById([item.creatorId]).then(function (users) {
               if (users && users.length === 1) {
                 item.sender = users[0].firstName;
                 resolve(item);
