@@ -49,20 +49,34 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
     <!-- conversation attribute is passed in below in JS. For predefined conversations, the
          conversation can be passed in via HTML -->
-    <circuit-chat id="chat" auto-logon></circuit-chat>
+
+    <circuit-chat id="chat"></circuit-chat>
 
 
     <script type='text/javascript'>
-      document.getElementById('conversationId').addEventListener('input', function (evt) {
-        if (evt.target.value.length >= 36) {
-          // Pass conversation ID to chat example
-          document.getElementById('chat').conversation = evt.target.value;
-        }
+      // Create Circuit client instance to be used in the component.
+      var client = new Circuit.Client();
+      client.logon('roger.urscheler@unify.com', 'Ansible.2014').then(function () {
+        document.getElementById('chat').api = client;
+
+        // Set the conversation property of the component. Could also be defined directly
+        // on the component, e.g. <circuit-chat conversation="1234"></circuit-chat>
+        document.getElementById('conversationId').addEventListener('input', function (evt) {
+          if (evt.target.value.length >= 36) {
+            document.getElementById('chat').conversation = evt.target.value;
+          }
+        });
+
+        // Show how circuit-chat fires on-message events
+        document.getElementById('chat').addEventListener('on-message', function (message) {
+          console.log('Received message: ' + message);
+        });
+      }).catch(function (e) {
+        console.log('Unable to logon. ' + e);
+        client = null;
       });
-      // Show how circuit-chat fires on-message events
-      document.getElementById('chat').addEventListener('on-message', function (message) {
-        console.log('Received message: ' + message);
-      });
+      
+
     </script>
 
   </body>

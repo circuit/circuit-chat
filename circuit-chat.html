@@ -4,7 +4,7 @@ Copyright (c) 2015 Unify. All rights reserved.
 -->
 
 <link rel="import" href="../polymer/polymer.html">
-<link rel="import" href="../circuit-api/circuit-api.html">
+<script src="https://circuitsandbox.net/circuit.js"></script>
 
 <!--
 Polymer element for a simple chat module that uses Circuit PaaS.
@@ -12,7 +12,6 @@ Polymer element for a simple chat module that uses Circuit PaaS.
 Example:
 
     <circuit-chat
-      auto-logon 
       conversation="4833fcdb-2b73-42e1-b4be-2a57faa48735">
     </circuit-chat>
 
@@ -43,7 +42,6 @@ Example:
   </style>
 
   <template>
-    <circuit-api id="api" auto-logon="[[autoLogon]]" domain="[[domain]]"></circuit-api>
     <div id="chatContainer" vertical layout>
       <div id="chatInput" contentEditable="true"></div>
       <div id="chatList" flex>
@@ -73,20 +71,11 @@ Example:
       },
 
       /**
-       * `domain` is the domain of the Circuit server. It defaults to circuitsandbox.net
+       * `api` is the Circuit.Client instance rpresenting the JS API.
        */
-      domain: {
-        type: String,
-        value: 'circuitsandbox.net'
-      },
-
-      /**
-       * `autoLogon` set to true will autmatically perform a logon. If not yet
-       * authenticated, the user is asked to provide the credentials.
-       */
-      autoLogon: {
-        type: Boolean,
-        value: false
+      api: {
+        type: Object,
+        observer: '_apiInitialized'
       },
 
       _items: {
@@ -98,8 +87,10 @@ Example:
     },
 
     // Element Lifecycle
-
     ready: function() {
+    },
+
+    _init: function () {
       var self = this;
 
       this.async(function () {
@@ -107,13 +98,13 @@ Example:
         self._refresh();
       }, 10);
 
-      this.$.api.addEventListener('registrationStateChanged', function (evt) {
+      this.api.addEventListener('registrationStateChanged', function (evt) {
         if (evt.state === 'Registered' && self.conversation) {
           self._init();
         }
       });
 
-      this.$.api.addEventListener('itemAdded', function (evt) {
+      this.api.addEventListener('itemAdded', function (evt) {
         var item = evt.item;
         if (item.text) {
           var obj = {text: item.chatText, sender: item.sender};
@@ -127,7 +118,7 @@ Example:
           var msg = self.$.chatInput.innerHTML;
 
           if (msg) {
-            self.$.api.addTextItem(self.conversation, msg);
+            self.api.addTextItem(self.conversation, msg);
             self.$.chatInput.innerHTML = '';
           }
         } else if (e.keyCode == '27') { // ESC
@@ -143,7 +134,7 @@ Example:
           if (item.type === 'TEXT') {
             item.chatText = item.text.content.replace(/<(br[\/]?|\/li|hr[\/]?)>/gi, ' ');
 
-            self.$.api.getUsersById([item.creatorId]).then(function (users) {
+            self.api.getUsersById([item.creatorId]).then(function (users) {
               if (users && users.length === 1) {
                 item.sender = users[0].firstName;
                 resolve(item);
@@ -157,12 +148,12 @@ Example:
           }
         });
       };
+
     },
 
-    _init: function () {
+    _populate: function () {
       var self = this;
-
-      this.$.api.getConversationItems(this.conversation, {maxResultsLimit: 10}).then(function (items) {
+      this.api.getConversationItems(this.conversation, {maxResultsLimit: 10}).then(function (items) {
         items = items.filter(function (item) {
           return !!item.text;
         }).map(function (item) {
@@ -177,9 +168,13 @@ Example:
       document.getElementById('chatList').style.height = (parseInt(this.height) - document.getElementById('chatInput').offsetHeight - 2) + 'px';
     },
 
+    _apiInitialized: function () {
+      this._init();
+    },
+
     _conversationChanged: function (newConv) {
       this.set('_items', []);
-      this._init();
+      this._populate();
     },
 
     // Events
