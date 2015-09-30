@@ -3,8 +3,9 @@
 Copyright (c) 2015 Unify. All rights reserved.
 -->
 
-<link rel="import" href="../polymer/polymer.html">
-<script src="https://circuitsandbox.net/circuit.js"></script>
+<link rel="import" href="bower_components/polymer/polymer.html">
+
+
 
 <!--
 Polymer element for a simple chat module that uses Circuit PaaS.
@@ -19,38 +20,38 @@ Example:
 -->
 <dom-module id="circuit-chat">
 
-  <style>
-    :host {
-      display: block;
-      box-sizing: border-box;
-    }
-    #chatList {
-      overflow-y: scroll;
-      padding: 3px;
-      border: black solid 1px;
-    }
-    #chatInput {
-      display: inline-block;
-      width: calc(100% - 8px);
-      border: black solid 1px;
-      border-bottom: none;
-      padding: 3px;
-    }
-    .sender {
-      font-style: italic;
-    }
-  </style>
+<style>
+  :host {
+    display: block;
+    box-sizing: border-box;
+  }
+  #chatList {
+    overflow-y: scroll;
+    padding: 3px;
+    border: black solid 1px;
+  }
+  #chatInput {
+    display: inline-block;
+    width: calc(100% - 8px);
+    border: black solid 1px;
+    border-bottom: none;
+    padding: 3px;
+  }
+  .sender {
+    font-style: italic;
+  }
+</style>
 
-  <template>
-    <div id="chatContainer" vertical layout>
-      <div id="chatInput" contentEditable="true"></div>
-      <div id="chatList" flex>
-        <template is="dom-repeat" items="[[_items]]">
-          <div class="item"><span class="sender">[[item.sender]]</span>: <span>[[item.text]]</span></div>
-        </template>
-      </div>      
+<template>
+  <div id="chatContainer" vertical layout>
+    <div id="chatInput" contentEditable="true"></div>
+    <div id="chatList" flex>
+      <template is="dom-repeat" items="[[_items]]">
+        <div class="item"><span class="sender">[[item.sender]]</span>: <span>[[item.text]]</span></div>
+      </template>
     </div>
-  </template>
+  </div>
+</template>
 
 </dom-module>
 
@@ -71,47 +72,29 @@ Example:
       },
 
       /**
-       * `api` is the Circuit.Client instance rpresenting the JS API.
+       * Circuit JS SDK client instance.
        */
       api: {
         type: Object,
-        observer: '_apiInitialized'
+        value: null,
+        observer: '_apiChanged'
       },
 
       _items: {
         type: Array,
-        value: function () { 
-          return [];
-        }
+        value: []
       },
     },
 
     // Element Lifecycle
-    ready: function() {
-    },
 
-    _init: function () {
+    ready: function() {
       var self = this;
 
       this.async(function () {
         self.height = self.offsetHeight + 'px';
         self._refresh();
       }, 10);
-
-      this.api.addEventListener('registrationStateChanged', function (evt) {
-        if (evt.state === 'Registered' && self.conversation) {
-          self._init();
-        }
-      });
-
-      this.api.addEventListener('itemAdded', function (evt) {
-        var item = evt.item;
-        if (item.text) {
-          var obj = {text: item.chatText, sender: item.sender};
-          self.unshift('_items', obj);
-          self.fire('message', obj);
-        }
-      });
 
       this.$.chatInput.addEventListener('keydown', function (e) {
         if (e.keyCode == '13' && !e.shiftKey) { // enter
@@ -124,43 +107,23 @@ Example:
         } else if (e.keyCode == '27') { // ESC
           self.$.chatInput.innerHTML = '';
         }
-        self._refresh();
       });
-
-
-      // Define an item injector to get the creator firstname
-      Circuit.Injectors.itemInjector = function (item) {
-        return new Promise(function (resolve, reject) {
-          if (item.type === 'TEXT') {
-            item.chatText = item.text.content.replace(/<(br[\/]?|\/li|hr[\/]?)>/gi, ' ');
-
-            self.api.getUsersById([item.creatorId]).then(function (users) {
-              if (users && users.length === 1) {
-                item.sender = users[0].firstName;
-                resolve(item);
-              } else {
-                reject('user not found: ' + item.creatorId);
-              }
-            });
-
-          } else {
-            resolve(item);
-          }
-        });
-      };
 
     },
 
-    _populate: function () {
+    // Events
+    _conversationChanged: function (newConv) {
       var self = this;
-      this.api.getConversationItems(this.conversation, {maxResultsLimit: 10}).then(function (items) {
-        items = items.filter(function (item) {
-          return !!item.text;
-        }).map(function (item) {
-          return {text: item.chatText, sender: item.sender};
-        }).reverse();
-        self.set('_items', items);
-      });
+      if (this.api != null) {
+        this.api.getConversationItems(this.conversation, {maxResultsLimit: 10}).then(function (items) {
+          items = items.filter(function (item) {
+            return !!item.text;
+          }).map(function (item) {
+            return {text: item.text.content, sender: item.sender};
+          }).reverse();
+          self.set('_items', items);
+        })
+      }
     },
 
     _refresh: function () {
@@ -168,23 +131,42 @@ Example:
       document.getElementById('chatList').style.height = (parseInt(this.height) - document.getElementById('chatInput').offsetHeight - 2) + 'px';
     },
 
-    _apiInitialized: function () {
-      this._init();
-    },
+    _apiChanged: function (newClientObj) {
+        var self = this;
+        if (self.api != null) {
+          self.api.addEventListener('registrationStateChanged', function (evt) {
+            if (evt.state === 'Registered' && this.conversation) {
+              self._init();
+            }
+          })
+          self.api.addEventListener('itemAdded', function (evt) {
+            var item = evt.item;
+            if (item.text) {
+              var obj = {text: item.text.content, sender: item.sender};
+              self.unshift('_items', obj);
+              self.fire('message', obj);
+            }
+          })
+          // Define an item injector to get the creator firstname
+          Circuit.Injectors.itemInjector = function (item) {
+            return new Promise(function (resolve, reject) {
+              if (item.type === 'TEXT') {
+                self.api.getUsersById([item.creatorId]).then(function (users) {
+                  if (users && users.length === 1) {
+                    item.sender = users[0].firstName;
+                    resolve(item);
+                  } else {
+                    reject('user not found: ' + item.creatorId);
+                  }
+                });
 
-    _conversationChanged: function (newConv) {
-      this.set('_items', []);
-      this._populate();
-    },
-
-    // Events
-
-    /**
-     * The `circuit-chat-message` event is fired whenever a new message is received (includes receiving own message).
-     *
-     * @event circuit-chat-message
-     * @detail {{sender: String, text: String}}
-     */
+              } else {
+                resolve(item);
+              }
+            });
+          };
+        }
+    }
 
   });
 

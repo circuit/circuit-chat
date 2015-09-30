@@ -15,6 +15,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
     <link rel="shortcut icon" href="../favicon.ico">
     <title>circuit-chat Demo</title>
 
+    <script type="text/javascript" src="https://circuitsandbox.net/circuit.js"></script>
     <script src="../../webcomponentsjs/webcomponents-lite.js"></script>
     <link rel="import" href="../circuit-chat.html">
 
@@ -31,7 +32,8 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
   <body>
 
-    <p>The <code>circuit-chat</code> component is a simple chat module that can easily be embedded into any website. The conversation ID to use can be passed to the component, or assigned via JavaScript.</p>
+    <p>The <code>circuit-chat</code> component is a simple chat module that can easily be embedded into any website.<br>
+    The api and conversationId to use can be passed to the component, or assigned via JavaScript.</p>
 
     <br>
     <div><b>Usage example:</b></div>
@@ -43,37 +45,45 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
     </xmp>
 
     <div><b>Live example:</b></div>
+    <input id="email" type="text" placeholder="Email">
+    <input id="password" type="password" placeholder="Password">
+    <button onclick="logon()">Logon</button>
     <p>Paste a conversation ID of a conversation you are part of and start chatting.</p>
     <input id="conversationId" placeholder="Enter a conversation ID">
     <br><br>
 
     <!-- conversation attribute is passed in below in JS. For predefined conversations, the
          conversation can be passed in via HTML -->
-
     <circuit-chat id="chat"></circuit-chat>
 
     <script type='text/javascript'>
-      // Create Circuit client instance to be used in the component.
-      var client = new Circuit.Client();
-      client.logon('roger.urscheler@unify.com', 'P@ssword').then(function () {
+      function logon() {
+        var email = document.getElementById('email').value;
+        var password = document.getElementById('password').value;
+
+        // Create Circuit client instance to be used in the component and logon
+        var client = new Circuit.Client();
         document.getElementById('chat').api = client;
 
-        // Set the conversation property of the component. Could also be defined directly
-        // on the component, e.g. <circuit-chat conversation="1234"></circuit-chat>
-        document.getElementById('conversationId').addEventListener('input', function (evt) {
-          if (evt.target.value.length >= 36) {
-            document.getElementById('chat').conversation = evt.target.value;
-          }
-        });
+        // Logon
+        client.logon({email: email, password:password}).then(function () {
+          // Set the conversation property of the component. Could also be defined directly
+          // on the component, e.g. <circuit-chat conversation="1234"></circuit-chat>
+          document.getElementById('conversationId').addEventListener('input', function (evt) {
+            if (evt.target.value.length >= 36) {
+              document.getElementById('chat').conversation = evt.target.value;
+            }
+          });
 
-        // Show how circuit-chat fires on-message events
-        document.getElementById('chat').addEventListener('on-message', function (message) {
-          console.log('Received message: ' + message);
+          // Show how circuit-chat fires on-message events
+          document.getElementById('chat').addEventListener('on-message', function (message) {
+            console.log('Received message: ' + message);
+          });
+        }).catch(function (e) {
+          console.log('Unable to logon. ' + e);
+          client = null;
         });
-      }).catch(function (e) {
-        console.log('Unable to logon. ' + e);
-        client = null;
-      });
+      }
     </script>
 
   </body>
