@@ -5,8 +5,6 @@ Copyright (c) 2015 Unify. All rights reserved.
 
 <link rel="import" href="bower_components/polymer/polymer.html">
 
-
-
 <!--
 Polymer element for a simple chat module that uses Circuit PaaS.
 
@@ -40,6 +38,9 @@ Example:
   .sender {
     font-style: italic;
   }
+  .me {
+    color: blue;
+  }
 </style>
 
 <template>
@@ -47,7 +48,7 @@ Example:
     <div id="chatInput" contentEditable="true"></div>
     <div id="chatList" flex>
       <template is="dom-repeat" items="[[_items]]">
-        <div class="item"><span class="sender">[[item.sender]]</span>: <span>[[item.text]]</span></div>
+        <div class$="{{item.class}}"><span class="sender">[[item.sender]]</span>: <span>[[item.text]]</span></div>
       </template>
     </div>
   </div>
@@ -119,7 +120,7 @@ Example:
           items = items.filter(function (item) {
             return !!item.text;
           }).map(function (item) {
-            return {text: item.text.content, sender: item.sender};
+            return {text: item.text.content, sender: item.sender, class: item.class};
           }).reverse();
           self.set('_items', items);
         })
@@ -127,8 +128,8 @@ Example:
     },
 
     _refresh: function () {
-      document.getElementById('chatContainer').style.height = this.height;
-      document.getElementById('chatList').style.height = (parseInt(this.height) - document.getElementById('chatInput').offsetHeight - 2) + 'px';
+      this.$.chatContainer.style.height = this.height;
+      this.$.chatList.style.height = (parseInt(this.height) - this.$.chatInput.offsetHeight - 2) + 'px';
     },
 
     _apiChanged: function (newClientObj) {
@@ -142,7 +143,7 @@ Example:
           self.api.addEventListener('itemAdded', function (evt) {
             var item = evt.item;
             if (item.text) {
-              var obj = {text: item.text.content, sender: item.sender};
+              var obj = {text: item.text.content, sender: item.sender, class: item.class};
               self.unshift('_items', obj);
               self.fire('message', obj);
             }
@@ -154,6 +155,7 @@ Example:
                 self.api.getUsersById([item.creatorId]).then(function (users) {
                   if (users && users.length === 1) {
                     item.sender = users[0].firstName;
+                    item.class = (item.creatorId === self.api.loggedOnUser.userId ? 'me' : '');
                     resolve(item);
                   } else {
                     reject('user not found: ' + item.creatorId);
