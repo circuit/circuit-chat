@@ -41,11 +41,15 @@ Example:
   .me {
     color: blue;
   }
+  [contentEditable=true]:empty:not(:focus):before {
+    content:attr(placeholder);
+    color: #ababab;
+  }
 </style>
 
 <template>
   <div id="chatContainer" vertical layout>
-    <div id="chatInput" contentEditable="true"></div>
+    <div id="chatInput" contentEditable="true" placeholder="Enter message"></div>
     <div id="chatList" flex>
       <template is="dom-repeat" items="[[_items]]">
         <div class$="{{item.class}}"><span class="sender">[[item.sender]]</span>: <span>[[item.text]]</span></div>
